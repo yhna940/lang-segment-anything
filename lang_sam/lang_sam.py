@@ -26,7 +26,7 @@ _GROUNDING_DINO_CONFIG_FILENAME = "GroundingDINO_SwinB.cfg.py"
 _DEFAULT_CACHE_DIR = os.path.expanduser("~/.cache/torch/hub/checkpoints")
 
 
-def _load_model_hf(repo_id, filename, config_filename, cache_dir, device='cpu'):
+def load_model_hf(repo_id, filename, config_filename, cache_dir, device='cpu'):
     """Load a Hugging Face model with a specific checkpoint and configuration, using a custom cache directory."""
     cache_config_file = hf_hub_download(repo_id=repo_id, filename=config_filename, cache_dir=cache_dir)
 
@@ -42,7 +42,7 @@ def _load_model_hf(repo_id, filename, config_filename, cache_dir, device='cpu'):
     return model
 
 
-def _transform_image(image) -> torch.Tensor:
+def transform_image(image) -> torch.Tensor:
     """Transform the input image for model inference."""
     transform = T.Compose([
         T.RandomResize([800], max_size=1333),
@@ -56,23 +56,34 @@ def _transform_image(image) -> torch.Tensor:
 
 class LangSAM:
 
-    def __init__(self, sam_type="vit_h", ckpt_path=None, return_prompts=False, cache_dir=_DEFAULT_CACHE_DIR):
+    def __init__(self,
+                 sam_type="vit_h",
+                 ckpt_path=None,
+                 return_prompts=False,
+                 cache_dir=_DEFAULT_CACHE_DIR,
+                 compile_model=False):
         """Initialize the LangSAM object, setting up both SAM and GroundingDINO models.
 
         :param sam_type: Type of SAM model (e.g., "vit_h", "vit_l", "vit_b")
         :param ckpt_path: Path to the SAM model checkpoint. If None, it will download from the default URL.
         :param return_prompts: Boolean flag for whether to return prompts from GroundingDINO.
         :param cache_dir: Path to the cache directory where models will be stored.
+        :param compile_model: Boolean flag to determine if the model should be compiled with torch.compile.
         """
         self.sam_type = sam_type
         self.ckpt_path = ckpt_path
         self.return_prompts = return_prompts
         self.cache_dir = cache_dir
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.compile_model = compile_model
 
         # Build models
         self.build_groundingdino()
         self.build_sam()
+
+        # Optionally compile the models if compile_model is True
+        if self.compile_model:
+            self.compile_models()
 
     def build_sam(self):
         """Build the SAM model, either loading from a custom checkpoint path or downloading from the default
@@ -101,10 +112,23 @@ class LangSAM:
 
     def build_groundingdino(self):
         """Build the GroundingDINO model, loading the configuration and weights from Hugging Face."""
-        self.groundingdino = _load_model_hf(repo_id=_GROUNDING_DINO_REPO_ID,
-                                            filename=_GROUNDING_DINO_CKPT_FILENAME,
-                                            config_filename=_GROUNDING_DINO_CONFIG_FILENAME,
-                                            cache_dir=self.cache_dir)
+        self.groundingdino = load_model_hf(repo_id=_GROUNDING_DINO_REPO_ID,
+                                           filename=_GROUNDING_DINO_CKPT_FILENAME,
+                                           config_filename=_GROUNDING_DINO_CONFIG_FILENAME,
+                                           cache_dir=self.cache_dir)
+
+    def compile_models(self):
+        """Compile the SAM and GroundingDINO models using torch.compile if PyTorch version >= 2.0."""
+        if torch.__version__ >= "2.0":
+            try:
+                self.groundingdino = torch.compile(self.groundingdino)
+                self.sam.model = torch.compile(self.sam.model)
+                print("Models have been successfully compiled with torch.compile.")
+            except Exception as e:
+                raise RuntimeError(f"Error during model compilation: {str(e)}")
+        else:
+            raise RuntimeError(
+                "torch.compile requires PyTorch 2.0 or higher. Please upgrade PyTorch to use this feature.")
 
     def predict_dino(self, image_pil, text_prompt, box_threshold, text_threshold):
         """Run the GroundingDINO model on an image with a text prompt to generate bounding boxes and logits.
@@ -115,7 +139,7 @@ class LangSAM:
         :param text_threshold: Threshold for text prediction confidence.
         :return: Bounding boxes, logits, and phrases detected by GroundingDINO.
         """
-        image_trans = _transform_image(image_pil)
+        image_trans = transform_image(image_pil)
         boxes, logits, phrases = predict(model=self.groundingdino,
                                          image=image_trans,
                                          caption=text_prompt,
