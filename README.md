@@ -34,8 +34,10 @@ git clone https://github.com/luca-medeiros/lang-segment-anything && cd lang-segm
 pip install torch torchvision
 pip install -e .
 ```
+
 Or use Conda
 Create a Conda environment from the `environment.yml` file:
+
 ```
 conda env create -f environment.yml
 # Activate the new environment:
@@ -46,13 +48,14 @@ conda activate lsa
 
 Build and run the image.
 
-	```
-	docker build --tag lang-segment-anything:latest .
-	docker run --gpus all -it lang-segment-anything:latest
-	```
+````
+```
+docker build --tag lang-segment-anything:latest .
+docker run --gpus all -it lang-segment-anything:latest
+```
+````
 
 If you want a shared folder you can add a volume with `-v <host_source_dir>:<container_dest_dir>` example: `-v ./data:/workspace/data`
-
 
 ### Usage
 
@@ -74,7 +77,7 @@ masks, boxes, phrases, logits = model.predict(image_pil, text_prompt)
 
 Use with custom checkpoint:
 
-First download a model checkpoint. 
+First download a model checkpoint.
 
 ```python
 from PIL import Image
