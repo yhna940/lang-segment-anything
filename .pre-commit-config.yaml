@@ -43,11 +43,6 @@ repos:
       - id: yesqa
         name: Unused noqa
 
-  - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.0.1
-    hooks:
-    -   id: reorder-python-imports
-
   - repo: https://github.com/pre-commit/mirrors-yapf
     rev: v0.32.0
     hooks:
@@ -70,3 +65,10 @@ repos:
           - mdformat-gfm
           - mdformat_frontmatter
         exclude: CHANGELOG.md
+
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.9.3
+    hooks:
+      - id: isort
+        name: Sort imports
+        args: ['--profile', 'black']
