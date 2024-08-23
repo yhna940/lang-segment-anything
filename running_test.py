@@ -1,9 +1,7 @@
-'''
-    This is just adapted from the example in the readme,
-    The main usage is for the built image to have the weights cached.
-'''
-
+"""This is just adapted from the example in the readme, The main usage is for the built image to have the weights
+cached."""
 from PIL import Image
+
 from lang_sam import LangSAM
 
 model = LangSAM()
