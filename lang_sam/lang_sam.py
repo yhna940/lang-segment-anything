@@ -78,6 +78,7 @@ class LangSAM:
         self.compile_model = compile_model
 
         # Build models
+        os.makedirs(self.cache_dir, exist_ok=True)
         self.build_groundingdino()
         self.build_sam()
 
