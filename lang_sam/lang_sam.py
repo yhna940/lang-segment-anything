@@ -56,59 +56,41 @@ def transform_image(image) -> torch.Tensor:
 
 class LangSAM:
 
-    def __init__(self,
-                 sam_type="vit_h",
-                 ckpt_path=None,
-                 return_prompts=False,
-                 cache_dir=_DEFAULT_CACHE_DIR,
-                 compile_model=False):
+    def __init__(self, sam_type="vit_h", return_prompts=False, cache_dir=_DEFAULT_CACHE_DIR, compile=False):
         """Initialize the LangSAM object, setting up both SAM and GroundingDINO models.
 
         :param sam_type: Type of SAM model (e.g., "vit_h", "vit_l", "vit_b")
-        :param ckpt_path: Path to the SAM model checkpoint. If None, it will download from the default URL.
         :param return_prompts: Boolean flag for whether to return prompts from GroundingDINO.
         :param cache_dir: Path to the cache directory where models will be stored.
-        :param compile_model: Boolean flag to determine if the model should be compiled with torch.compile.
+        :param compile: Boolean flag to determine if the model should be compiled with torch.compile.
         """
         self.sam_type = sam_type
-        self.ckpt_path = ckpt_path
         self.return_prompts = return_prompts
         self.cache_dir = cache_dir
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.compile_model = compile_model
+        self.compile = compile
 
         # Build models
+        os.makedirs(self.cache_dir, exist_ok=True)
         self.build_groundingdino()
         self.build_sam()
 
-        # Optionally compile the models if compile_model is True
-        if self.compile_model:
+        # Optionally compile the models if compile is True
+        if self.compile:
             self.compile_models()
 
     def build_sam(self):
-        """Build the SAM model, either loading from a custom checkpoint path or downloading from the default
-        URL."""
-        if self.ckpt_path is None:
-            # No checkpoint path provided, use default URL
-            checkpoint_url = _SAM_MODELS.get(self.sam_type, _SAM_MODELS["vit_h"])
-            try:
-                state_dict = torch.hub.load_state_dict_from_url(checkpoint_url, model_dir=self.cache_dir)
-                sam = sam_model_registry[self.sam_type]()
-                sam.load_state_dict(state_dict, strict=True)
-            except Exception as e:
-                raise ValueError(f"Error loading SAM model: {self.sam_type}. "
-                                 f"Check model type and checkpoint URL: {checkpoint_url}. Error: {str(e)}")
-            sam.to(self.device)
-            self.sam = SamPredictor(sam)
-        else:
-            # Load from the provided checkpoint path
-            try:
-                sam = sam_model_registry[self.sam_type](self.ckpt_path)
-            except Exception as e:
-                raise ValueError(f"Error loading SAM model: {self.sam_type}. Ensure the checkpoint path "
-                                 f"matches the model type. Error: {str(e)}")
-            sam.to(self.device)
-            self.sam = SamPredictor(sam)
+        """Build the SAM model by downloading the checkpoint from the predefined URL."""
+        checkpoint_url = _SAM_MODELS.get(self.sam_type, _SAM_MODELS["vit_h"])
+        try:
+            state_dict = torch.hub.load_state_dict_from_url(checkpoint_url, model_dir=self.cache_dir)
+            sam = sam_model_registry[self.sam_type]()
+            sam.load_state_dict(state_dict, strict=True)
+        except Exception as e:
+            raise ValueError(f"Error loading SAM model: {self.sam_type}. "
+                             f"Check model type and checkpoint URL: {checkpoint_url}. Error: {str(e)}")
+        sam.to(self.device)
+        self.sam = SamPredictor(sam)
 
     def build_groundingdino(self):
         """Build the GroundingDINO model, loading the configuration and weights from Hugging Face."""
