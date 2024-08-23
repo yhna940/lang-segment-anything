@@ -61,29 +61,29 @@ class LangSAM:
                  ckpt_path=None,
                  return_prompts=False,
                  cache_dir=_DEFAULT_CACHE_DIR,
-                 compile_model=False):
+                 compile=False):
         """Initialize the LangSAM object, setting up both SAM and GroundingDINO models.
 
         :param sam_type: Type of SAM model (e.g., "vit_h", "vit_l", "vit_b")
         :param ckpt_path: Path to the SAM model checkpoint. If None, it will download from the default URL.
         :param return_prompts: Boolean flag for whether to return prompts from GroundingDINO.
         :param cache_dir: Path to the cache directory where models will be stored.
-        :param compile_model: Boolean flag to determine if the model should be compiled with torch.compile.
+        :param compile: Boolean flag to determine if the model should be compiled with torch.compile.
         """
         self.sam_type = sam_type
         self.ckpt_path = ckpt_path
         self.return_prompts = return_prompts
         self.cache_dir = cache_dir
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.compile_model = compile_model
+        self.compile = compile
 
         # Build models
         os.makedirs(self.cache_dir, exist_ok=True)
         self.build_groundingdino()
         self.build_sam()
 
-        # Optionally compile the models if compile_model is True
-        if self.compile_model:
+        # Optionally compile the models if compile is True
+        if self.compile:
             self.compile_models()
 
     def build_sam(self):
