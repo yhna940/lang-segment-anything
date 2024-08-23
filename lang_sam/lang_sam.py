@@ -9,8 +9,7 @@ from groundingdino.util.inference import predict
 from groundingdino.util.slconfig import SLConfig
 from groundingdino.util.utils import clean_state_dict
 from huggingface_hub import hf_hub_download
-from segment_anything import sam_model_registry
-from segment_anything import SamPredictor
+from segment_anything import SamPredictor, sam_model_registry
 
 # Global constants for model URLs and filenames
 _SAM_MODELS = {

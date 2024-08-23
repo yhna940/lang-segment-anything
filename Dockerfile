@@ -21,11 +21,3 @@ COPY . $HOME/lang-segment-anything
 # installing python dependencies:
 WORKDIR $HOME/lang-segment-anything
 RUN pip install -e .
-
-# running the basic test,
-# then it will held the weights inside the image,
-# so no "cold start"
-RUN python running_test.py
-
-# running the app:
-CMD ["lightning", "run", "app", "app.py"]

@@ -2,8 +2,7 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
-from torchvision.utils import draw_bounding_boxes
-from torchvision.utils import draw_segmentation_masks
+from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 
 MIN_AREA = 100
 
